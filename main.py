@@ -18,11 +18,17 @@ while running:
         elif e.type == p.KEYDOWN:
             if e.key == p.K_z and len(x.moves) != 0:
                 x.undo_move()
+                sqSelected = ()
+                playerClicks = []
         
         elif e.type == p.MOUSEBUTTONDOWN and human_turn: #quand on clique
             location = p.mouse.get_pos() #(x,y) de la souris
-            col = location[0]//SQ_SIZE #la position en x divisée par la taille du carré
-            row = 7 - location[1]//SQ_SIZE #la position en y
+            if x.white_to_move:
+                col = location[0]//SQ_SIZE #la position en x divisée par la taille du carré
+                row = 7 - location[1]//SQ_SIZE #la position en y
+            else:
+                col = 7 - location[0]//SQ_SIZE
+                row = location[1]//SQ_SIZE
             if sqSelected == (row, col): #utilisateur a cliqué 2x à la même place
                 sqSelected = () #clear la case choisie
                 playerClicks = [] #clear les clicks du joueur
@@ -34,6 +40,7 @@ while running:
                 if is_move_made:
                     sqSelected = ()
                     playerClicks = []
+
                     #human_turn = False
                 else:
                     playerClicks = [sqSelected]

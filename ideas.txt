@@ -1,4 +1,3 @@
-- Inverser le board quand c'est à l'adversaire
 - Promotion des pions
 - Différents modes de jeu dans folder game_modes et runner partie depuis ça
 - Gitignore.

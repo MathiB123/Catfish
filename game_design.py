@@ -41,8 +41,12 @@ def draw_pieces(screen, game_bitboard) -> None:
     pieces = white_pieces + black_pieces
     for piece in pieces:
         positions = game_bitboard.find_indices_of_set_bits(piece)
-        for position in positions:
-            screen.blit(IMAGES[piece[1]], p.Rect(position[2]*SQ_SIZE, (7-position[1])*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+        if game_bitboard.white_to_move:
+            for position in positions:
+                screen.blit(IMAGES[piece[1]], p.Rect(position[2]*SQ_SIZE, (7-position[1])*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+        else:
+            for position in positions:
+                screen.blit(IMAGES[piece[1]], p.Rect((7-position[2])*SQ_SIZE, position[1]*SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
 def highlightSquares(screen, gs, sqSelected):
@@ -51,9 +55,14 @@ def highlightSquares(screen, gs, sqSelected):
         s = p.Surface((SQ_SIZE,SQ_SIZE))
         s.set_alpha(100) 
         s.fill(p.Color('blue'))
-        screen.blit(s,(c*SQ_SIZE, (7-r)*SQ_SIZE))
+        screen.blit(s,(c*SQ_SIZE, (7-r)*SQ_SIZE)) if gs.white_to_move else screen.blit(s,((7-c)*SQ_SIZE, r*SQ_SIZE)) 
         s.fill(p.Color('yellow'))
         validMoves = gs.get_all_legal_moves()
-        for move in validMoves:
-            if move.init_square[0] == r and move.init_square[1] == c:
-                screen.blit(s, (SQ_SIZE*move.final_square[1], SQ_SIZE*(7-move.final_square[0])))
+        if gs.white_to_move:
+            for move in validMoves:
+                if move.init_square[0] == r and move.init_square[1] == c:
+                    screen.blit(s, (SQ_SIZE*move.final_square[1], SQ_SIZE*(7-move.final_square[0])))
+        else:
+            for move in validMoves:
+                if move.init_square[0] == r and move.init_square[1] == c:
+                    screen.blit(s, (SQ_SIZE*(7-move.final_square[1]), SQ_SIZE*move.final_square[0]))
