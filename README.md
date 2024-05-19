@@ -1,4 +1,2 @@
 # Catfish
-Chess game made in python using bitboards. Interface done with pygame. 
-
-M.B
+Chess game made in python using bitboards. Interface done with pygame.
