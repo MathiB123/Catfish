@@ -114,19 +114,19 @@ class Game:
         for piece in pieces:
             index, i, j = piece
             #First square in front is empty?
-            if (1 << (index + 8)) & (~bitboard_game): 
-                white_pawn_moves.append(Move((i, j), (i+1, j), self.bitboard_white_pawns))
-                #Pawn has moved and the 2nd square in front is empty?
+            if (1 << (index + 8)) & (~bitboard_game):
+                white_pawn_moves.append(Move((i, j), (i+1, j), self.bitboard_white_pawns, is_promotion= i+1==7))
+                #Pawn hasnt moved and the 2nd square in front is empty?
                 if i == 1 and (1 << (index + 16)) & (~bitboard_game): 
                     white_pawn_moves.append(Move((i, j), (i+2, j), self.bitboard_white_pawns, en_passant_possible=True, en_passant_square=(i+2,j)))
             #Capture to the right
             if j < 7 and (1 << (index + 9)) & bitboard_color:
                 white_pawn_attacks.append((i+1,j+1))
-                white_pawn_moves.append(Move((i,j),(i+1,j+1), self.bitboard_white_pawns))  
+                white_pawn_moves.append(Move((i,j),(i+1,j+1), self.bitboard_white_pawns, is_promotion= i+1==7))  
             #Capture to the left
             if j > 0 and (1 << (index + 7)) & bitboard_color:
                 white_pawn_attacks.append((i+1,j-1))
-                white_pawn_moves.append(Move((i,j), (i+1,j-1), self.bitboard_white_pawns))
+                white_pawn_moves.append(Move((i,j), (i+1,j-1), self.bitboard_white_pawns, is_promotion= i+1==7))
             #Capture en passant
             if i == 4 and self.en_passant_possible and (self.en_passant_square == (i,j-1) or self.en_passant_square == (i,j+1)):
                 white_pawn_moves.append(Move((i,j),(self.en_passant_square[0]+1, self.en_passant_square[1]), self.bitboard_white_pawns, is_en_passant_move=True))
@@ -151,18 +151,18 @@ class Game:
             index, i, j = piece
             #First square in front is empty?
             if (1 << (index - 8)) & (~bitboard_game): 
-                black_pawn_moves.append(Move((i, j), (i-1, j), self.bitboard_black_pawns))
+                black_pawn_moves.append(Move((i, j), (i-1, j), self.bitboard_black_pawns, is_promotion= i-1==0))
                 #Pawm hasnt moved and the 2nd square in front is empty
                 if i == 6 and (1 << (index - 16)) & (~bitboard_game):
                     black_pawn_moves.append(Move((i, j), (i-2, j), self.bitboard_black_pawns, en_passant_possible=True, en_passant_square=(i-2,j)))
             #Capture to the right
             if j < 7 and (1 << (index - 7)) & bitboard_color:
                 black_pawn_attacks.append((i-1,j+1))
-                black_pawn_moves.append(Move((i,j),(i-1,j+1), self.bitboard_black_pawns))  
+                black_pawn_moves.append(Move((i,j),(i-1,j+1), self.bitboard_black_pawns, is_promotion= i-1==0))  
             #Capture to the left
             if j > 0 and (1 << (index - 9)) & bitboard_color:
                 black_pawn_attacks.append((i-1,j-1))
-                black_pawn_moves.append(Move((i,j), (i-1,j-1), self.bitboard_black_pawns))
+                black_pawn_moves.append(Move((i,j), (i-1,j-1), self.bitboard_black_pawns, is_promotion= i-1==0))
             #Capture en passant
             if i == 3 and self.en_passant_possible and (self.en_passant_square == (i,j-1) or self.en_passant_square == (i,j+1)):
                 black_pawn_moves.append(Move((i,j),(self.en_passant_square[0]-1, self.en_passant_square[1]), self.bitboard_black_pawns,is_en_passant_move=True))
@@ -570,6 +570,9 @@ class Game:
                 elif allowed_move.is_castling_move:
                     self.make_castling_move(allowed_move)
                     return True, allowed_move
+                elif allowed_move.is_promotion:
+                    self.make_promotion_move(allowed_move)
+                    return True, allowed_move
                 else: 
                     self.make_move(allowed_move)
                     return True, allowed_move
@@ -682,6 +685,42 @@ class Game:
         self.white_to_move = not self.white_to_move      
 
 
+    def make_promotion_move(self, move : Move) -> None:
+        promoted_piece = None
+        promotion = input("What piece to promote to?")
+        match promotion:
+            case "N":
+                promoted_piece = self.bitboard_white_knights if self.white_to_move else self.bitboard_black_knights
+            case "B":
+                promoted_piece = self.bitboard_white_bishops if self.white_to_move else self.bitboard_black_bishops
+            case "R":
+                promoted_piece = self.bitboard_white_rooks if self.white_to_move else self.bitboard_black_rooks
+            case "Q":
+                promoted_piece = self.bitboard_white_queens if self.white_to_move else self.bitboard_black_queens        
+        
+        #Updating the bitboard of the piece that is moved
+        init_index = move.init_square[0]*8 + move.init_square[1]
+        move.bb_piece[0] ^= (1 << init_index)
+        final_index = move.final_square[0]*8 + move.final_square[1]
+        promoted_piece[0] ^= (1 << final_index)
+
+        #Change the bitboard of a captured if the move is a capture
+        bitboards_colour = self.list_black_bitboards if self.white_to_move else self.list_white_bitboards
+        bb_capture = None
+        for bitboard in bitboards_colour:
+            if bitboard[0] & (1 << final_index):
+                bitboard[0] ^= (1 << final_index)
+                bb_capture = bitboard
+                break
+        self.captures.append(bb_capture)
+
+        #Change en passant conditions
+        self.en_passant_possible = move.en_passant_possible
+        self.en_passant_square = move.en_passant_square
+
+        self.white_to_move = not self.white_to_move
+
+
     def undo_move(self) -> None:
         """Undoes the previous move.
         """
@@ -690,6 +729,8 @@ class Game:
             self.undo_en_passant_move(last_move)
         elif last_move.is_castling_move:
             self.undo_castle_move(last_move)
+        elif last_move.is_promotion:
+            self.undo_promotion_move(last_move)
         else:
             self.undo_regular_move(last_move)
         self.captures.pop()
@@ -699,6 +740,29 @@ class Game:
         self.bk_can_queenside_castle_list.pop()
         self.en_passant_possible_list.pop()
         self.en_passant_square_list.pop()
+
+    def undo_promotion_move(self, move : Move):
+        init_index = move.init_square[0]*8 + move.init_square[1]
+        move.bb_piece[0] ^= 1 << init_index
+        final_index = move.final_square[0]*8 + move.final_square[1]
+        ls_bb = self.list_black_bitboards if self.white_to_move else self.list_white_bitboards
+        for bb in ls_bb:
+            if bb[0] & (1 << final_index):
+                bb[0] ^= 1 << final_index 
+                break
+        
+        if self.captures[-1] is not None:
+            self.captures[-1][0] ^= 1 << final_index
+
+        self.en_passant_possible = self.en_passant_possible_list[-1]
+        self.en_passant_square = self.en_passant_square_list[-1]
+
+        self.white_to_move = not self.white_to_move
+        
+        self.wk_can_kingside_castle = self.wk_can_kingside_castle_list[-1]
+        self.wk_can_queenside_castle = self.wk_can_queenside_castle_list[-1]
+        self.bk_can_kingside_castle = self.bk_can_kingside_castle_list[-1]
+        self.bk_can_queenside_castle = self.bk_can_queenside_castle_list[-1]
 
 
     def undo_regular_move(self, move:Move) -> None:
