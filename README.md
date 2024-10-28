@@ -1,6 +1,7 @@
 # Catfish
-Chess game made in python using bitboards. Interface done with pygame.
+Very simple two player chess game made in python using bitboards for the logic and Pygame for the interface. Pygame is the only dependency to install.
 
-Run the main file in order to play chess!
+### How to play
+First, download this repo and create a virtual environment. Then, install Pygame and run `python src/main.py` to play!
 
-Pygame is the only dependency you need to install in your venv.
+Use the mouse and click on the squares to make a move. Use the `z` key to undo a move.
